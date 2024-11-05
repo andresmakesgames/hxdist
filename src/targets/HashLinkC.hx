@@ -42,7 +42,7 @@ class HashLinkC extends Target {
 			createPackageGcc(hxmlContent, outputDir + '/hlc_win', winFiles);
 		}
 		else if(Sys.systemName() == 'Mac') {
-			Term.warning("Mac HL/C build not yet implemented...");
+			createPackageGcc(hxmlContent, outputDir + '/hlc_mac', macFiles);
 		}
 		else {
 			Term.error("Could not determine current system...");
@@ -53,25 +53,43 @@ class HashLinkC extends Target {
 		Term.print("Packaging " + packageDir + "...");
 		FileUtil.createDirectory(packageDir);
 
-		var result = runCommand('gcc', [
-			'$sourceFile',
-			'-o',
-			'$packageDir/$projName',
-			'-w',
-			'-std=c11',
-			'-I$sourceDir',
-			'-lhl /usr/local/lib/*.hdll',
-			'-lm',
-			'-lGL'
-		]);
-
-		// Runtimes
-		copyRuntimeFiles(hxml, packageDir, files);
+		var result = 0;
+		if(Sys.systemName() == 'Mac') {
+			var customHashlinkDir = "../hashlink/src";
+			result = runCommand('gcc', [
+				sourceFile,
+				'-arch arm64',
+				'-O3',
+				'-o $packageDir/$projName',
+				'-I $sourceDir',
+				'-I $customHashlinkDir',
+				'-lhl /usr/local/lib/*.hdll',
+				'-L /opt/homebrew/opt/libuv/lib',
+				'-luv',
+				'-lm',
+				'-w'
+			]);
+		}
+		else {
+			result = runCommand('gcc', [
+				'$sourceFile',
+				'-o',
+				'$packageDir/$projName',
+				'-w',
+				'-std=c11',
+				'-I$sourceDir',
+				'-lhl /usr/local/lib/*.hdll',
+				'-lm',
+				'-lGL'
+			]);
+		}
 		
 		if(result == 0) {
+			// Runtimes
+			copyRuntimeFiles(hxml, packageDir, files);
 			Term.print('gcc build successfull!');
 		} else {
-			Term.error('gcc build failed...');
+			Term.error('gcc build failed. Error code: $result');
 		}
 	}
 
@@ -168,7 +186,7 @@ class HashLinkC extends Target {
 			{ f:"libvorbisfile.3.dylib" },
 
 			{ f:"ssl.hdll" },
-			{ f:"libmbedtls.10.dylib" },
+			{ f:"libmbedtls.14.dylib" },
 
 			{ f:"sdl.hdll", lib:"hlsdl" },
 			{ f:"libSDL2-2.0.0.dylib", lib:"hlsdl" },

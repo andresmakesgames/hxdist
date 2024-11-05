@@ -105,11 +105,12 @@ class Target {
 
 	function runCommand(tool:String, args:Array<String>) : Int {
 		var cmd = '$tool ${args.join(" ")}';
-
+		Term.print("Executing command: " + cmd);
 		var p = new sys.io.Process(cmd);
 		var code = p.exitCode();
+		if(code != 0)
+			Term.print("ERROR: " + p.stderr.readAll());
 		p.close();
-		
 		return code;
 	}
 
